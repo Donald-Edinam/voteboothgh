@@ -110,7 +110,7 @@ const paystackService = {
       }
 
       const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
         email: email,
         amount: amount * 1, // Convert to kobo
         currency: 'GHS',
