@@ -1,8 +1,8 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { Phone, Vote, Award, Check, AlertCircle, Star, Trophy, Sparkles, Heart, Zap } from 'lucide-react';
+import { Phone, Award, Check, AlertCircle, Star, Trophy, Sparkles, Heart, Zap } from 'lucide-react';
 import AppLogo from '../assets/image.png';
-import { getPocketbaseImageUrl } from '../utils/utils';
+import { getPocketbaseImageUrl, generatePhoneHash } from '../utils/utils';
 
 // Fixed PocketBase service
 const pocketbaseService = {
@@ -145,7 +145,7 @@ const paystackService = {
     try {
       const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
         headers: {
-          'Authorization': `${import.meta.env.VITE_PAYSTACK_PUBLIC_KEY}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_PAYSTACK_SECRET_KEY}`,
         }
       });
       const data = await response.json();
@@ -170,6 +170,44 @@ const VotingSystem = () => {
   const [showCelebration, setShowCelebration] = useState(false);
 
   const predefinedAmounts = [1, 2, 5, 10];
+
+  // Load state from localStorage on initial render
+  useEffect(() => {
+    try {
+      const savedStateJSON = localStorage.getItem('votingAppState');
+      if (savedStateJSON) {
+        const savedState = JSON.parse(savedStateJSON);
+        if (savedState.paymentRef) {
+          setCurrentStep(savedState.currentStep);
+          setPhone(savedState.phone);
+          setSelectedAmount(savedState.selectedAmount);
+          setVotes(savedState.votes || {});
+          setPaymentRef(savedState.paymentRef);
+          setVotesRemaining(savedState.votesRemaining);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load state from localStorage:", error);
+      // If state is corrupted, clear it
+      localStorage.removeItem('votingAppState');
+    }
+  }, []); // Run only once on mount
+
+  // Save state to localStorage
+  useEffect(() => {
+    // We only save state if a payment has been initiated
+    if (paymentRef) {
+      const stateToSave = {
+        currentStep,
+        phone,
+        selectedAmount,
+        votes,
+        paymentRef,
+        votesRemaining,
+      };
+      localStorage.setItem('votingAppState', JSON.stringify(stateToSave));
+    }
+  }, [currentStep, phone, selectedAmount, votes, paymentRef, votesRemaining]);
 
   // Load Paystack script
   useEffect(() => {
@@ -268,7 +306,7 @@ const VotingSystem = () => {
         nomineeIds.map(nomineeId => ({ categoryId, nomineeId }))
       );
 
-      const phoneHash = btoa(phone + Date.now().toString()).substring(0, 16);
+      const phoneHash = await generatePhoneHash(phone);
 
       await pocketbaseService.submitVotes(allVotes, phoneHash, paymentRef);
       setShowCelebration(true);
@@ -293,6 +331,7 @@ const VotingSystem = () => {
   };
 
   const resetApp = () => {
+    localStorage.removeItem('votingAppState');
     setCurrentStep('payment');
     setPhone('');
     setSelectedAmount(null);
