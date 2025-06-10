@@ -112,7 +112,7 @@ const paystackService = {
       const handler = window.PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
         email: email,
-        amount: amount * 1, // Convert to kobo
+        amount: amount * 100, // Convert to kobo
         currency: 'GHS',
         channels: ['mobile_money'],
         metadata: {
