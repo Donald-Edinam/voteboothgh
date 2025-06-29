@@ -513,3 +513,8 @@ const ResultsDisplay = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+export default ResultsDisplay;
